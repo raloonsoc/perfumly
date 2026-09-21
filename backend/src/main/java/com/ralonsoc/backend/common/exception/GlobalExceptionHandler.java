@@ -4,6 +4,9 @@ import com.ralonsoc.backend.auth.EmailAlreadyInUseException;
 import com.ralonsoc.backend.auth.InvalidCredentialsException;
 import com.ralonsoc.backend.auth.UsernameAlreadyInUseException;
 import com.ralonsoc.backend.perfume.PerfumeNotFoundException;
+import com.ralonsoc.backend.review.DuplicateReviewException;
+import com.ralonsoc.backend.review.ReviewAccessDeniedException;
+import com.ralonsoc.backend.review.ReviewNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,5 +69,25 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(ReviewNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleReviewNotFound(ReviewNotFoundException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DuplicateReviewException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateReview(DuplicateReviewException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ReviewAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleReviewAccessDenied(ReviewAccessDeniedException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI());
+        return ResponseEntity.status(status).body(error);
     }
 }

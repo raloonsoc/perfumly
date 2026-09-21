@@ -38,6 +38,7 @@ public class Review {
     @Max(value = 10, message = "Rating must be at most 10")
     @Column(nullable = false)
     private Integer rating;
+
     @NotBlank(message = "Description can't be empty")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;

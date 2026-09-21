@@ -32,7 +32,7 @@ the tutorial-project level.
 | Perfume detail pages (brand, notes, accords) | ✅ Done |
 | Automatic catalog seeding from dataset | ✅ Done |
 | JWT authentication (register / login) | ✅ Done |
-| User reviews & ratings | ⏳ Planned |
+| User reviews & ratings | ✅ Done |
 | Favorites | ⏳ Planned |
 | Bearer token cookies | ⏳ Planned |
 | Accord-based recommender | ⏳ Planned |
@@ -99,6 +99,10 @@ everything else requires a valid JWT by default (see `SecurityConfig`).
 | `POST` | `/api/auth/register` | Public | Create a new user account, returns a JWT |
 | `POST` | `/api/auth/login` | Public | Authenticate with credentials, returns a JWT |
 | `GET` | `/api/auth/me` | Bearer JWT | Current authenticated user's profile |
+| `GET` | `/api/perfumes/{perfumeId}/reviews` | Public | Paginated list of reviews for a perfume |
+| `POST` | `/api/perfumes/{perfumeId}/reviews` | Bearer JWT | Create a review (rating 1–10 + description). `409` if the user already reviewed this perfume |
+| `PUT` | `/api/reviews/{id}` | Bearer JWT | Update your own review. `403` if it belongs to another user |
+| `DELETE` | `/api/reviews/{id}` | Bearer JWT | Delete your own review. `403` if it belongs to another user |
 
 Responses use dedicated DTOs — JPA entities are never exposed directly.
 
@@ -151,7 +155,7 @@ bun dev
 ## Roadmap
 
 - [x] JWT authentication (register / login)
-- [ ] Reviews & ratings
+- [x] Reviews & ratings
 - [ ] Favorites
 - [ ] Accord-similarity recommender
 - [ ] Frontend implementation
