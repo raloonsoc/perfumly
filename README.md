@@ -31,9 +31,10 @@ the tutorial-project level.
 | Catalog browsing (pagination, filters, search) | ✅ Done |
 | Perfume detail pages (brand, notes, accords) | ✅ Done |
 | Automatic catalog seeding from dataset | ✅ Done |
-| JWT authentication (register / login) | ▶️ In progress |
+| JWT authentication (register / login) | ✅ Done |
 | User reviews & ratings | ⏳ Planned |
 | Favorites | ⏳ Planned |
+| Bearer token cookies | ⏳ Planned |
 | Accord-based recommender | ⏳ Planned |
 | Frontend | ⏳ Planned |
 | Production deployment | ⏳ Planned |
@@ -70,7 +71,7 @@ com.ralonsoc.backend
 ├── perfume/    Perfume, Brand, Note, Accord, PerfumeNote, PerfumeAccord + DTOs
 ├── user/       User, UserFavorite
 ├── review/     Review
-└── auth/       JWT auth (work in progress)
+└── auth/       JWT authentication (register, login, current user)
 ```
 
 ### Data model
@@ -88,13 +89,16 @@ Schema evolution is fully managed through versioned Flyway migrations
 
 ### API
 
-All catalog endpoints are public; everything else requires authentication by default
-(see `SecurityConfig`).
+Catalog and auth entry points (`/api/perfumes/**`, `/api/auth/**`) are public;
+everything else requires a valid JWT by default (see `SecurityConfig`).
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/perfumes` | Paginated catalog listing. Supports `gender`, `brandId`, and `search` query params |
-| `GET` | `/api/perfumes/{id}` | Full detail for a single perfume (brand, notes, accords) |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/perfumes` | Public | Paginated catalog listing. Supports `gender`, `brandId`, and `search` query params |
+| `GET` | `/api/perfumes/{id}` | Public | Full detail for a single perfume (brand, notes, accords) |
+| `POST` | `/api/auth/register` | Public | Create a new user account, returns a JWT |
+| `POST` | `/api/auth/login` | Public | Authenticate with credentials, returns a JWT |
+| `GET` | `/api/auth/me` | Bearer JWT | Current authenticated user's profile |
 
 Responses use dedicated DTOs — JPA entities are never exposed directly.
 
@@ -146,7 +150,7 @@ bun dev
 
 ## Roadmap
 
-- [ ] JWT authentication (register / login)
+- [x] JWT authentication (register / login)
 - [ ] Reviews & ratings
 - [ ] Favorites
 - [ ] Accord-similarity recommender
