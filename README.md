@@ -33,7 +33,7 @@ the tutorial-project level.
 | Automatic catalog seeding from dataset | ✅ Done |
 | JWT authentication (register / login) | ✅ Done |
 | User reviews & ratings | ✅ Done |
-| Favorites | ⏳ Planned |
+| Favorites | ✅ Done |
 | Bearer token cookies | ⏳ Planned |
 | Accord-based recommender | ⏳ Planned |
 | Frontend | ⏳ Planned |
@@ -103,6 +103,9 @@ everything else requires a valid JWT by default (see `SecurityConfig`).
 | `POST` | `/api/perfumes/{perfumeId}/reviews` | Bearer JWT | Create a review (rating 1–10 + description). `409` if the user already reviewed this perfume |
 | `PUT` | `/api/reviews/{id}` | Bearer JWT | Update your own review. `403` if it belongs to another user |
 | `DELETE` | `/api/reviews/{id}` | Bearer JWT | Delete your own review. `403` if it belongs to another user |
+| `GET` | `/api/users/me/favorites` | Bearer JWT | Paginated list of the current user's favorite perfumes |
+| `POST` | `/api/users/me/favorites/{perfumeId}` | Bearer JWT | Add a perfume to favorites. `409` if already favorited |
+| `DELETE` | `/api/users/me/favorites/{perfumeId}` | Bearer JWT | Remove a perfume from favorites. `404` if not favorited |
 
 Responses use dedicated DTOs — JPA entities are never exposed directly.
 
@@ -156,7 +159,7 @@ bun dev
 
 - [x] JWT authentication (register / login)
 - [x] Reviews & ratings
-- [ ] Favorites
+- [x] Favorites
 - [ ] Accord-similarity recommender
 - [ ] Frontend implementation
 - [ ] Production deployment

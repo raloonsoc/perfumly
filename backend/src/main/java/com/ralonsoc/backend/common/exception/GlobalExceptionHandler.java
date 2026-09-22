@@ -7,6 +7,8 @@ import com.ralonsoc.backend.perfume.PerfumeNotFoundException;
 import com.ralonsoc.backend.review.DuplicateReviewException;
 import com.ralonsoc.backend.review.ReviewAccessDeniedException;
 import com.ralonsoc.backend.review.ReviewNotFoundException;
+import com.ralonsoc.backend.user.FavoriteAlreadyExistsException;
+import com.ralonsoc.backend.user.FavoriteNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,5 +91,15 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String message, HttpServletRequest request) {
         ErrorResponse error = new ErrorResponse(Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI());
         return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(FavoriteAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleFavoriteExists(FavoriteAlreadyExistsException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FavoriteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFavoriteNotFound(FavoriteNotFoundException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 }
