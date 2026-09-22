@@ -1,4 +1,6 @@
 package com.ralonsoc.backend.auth.dto;
 
-public record AuthResponse(String token, String username, String email) {
+import org.springframework.http.ResponseCookie;
+
+public record AuthResponse(UserProfileResponse profile, ResponseCookie cookie) {
 }

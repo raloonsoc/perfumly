@@ -5,6 +5,7 @@ import com.ralonsoc.backend.user.User;
 import com.ralonsoc.backend.user.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -28,14 +30,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
+        String token = extractTokenFromCookie(request);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (token == null) {
+            token = extractTokenFromHeader(request); // fallback para Postman/pruebas
+        }
+
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
         String email = jwtService.extractEmail(token);
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -48,5 +53,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> c.getName().equals("jwt"))
+                .findFirst()
+                .map(Cookie::getValue)
+                .orElse(null);
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+        return null;
     }
 }

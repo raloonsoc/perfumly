@@ -7,6 +7,7 @@ import com.ralonsoc.backend.auth.dto.UserProfileResponse;
 import com.ralonsoc.backend.user.User;
 import com.ralonsoc.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,7 +40,9 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, request.username(), request.email());
+        ResponseCookie cookie = jwtService.generateCookie(token);
+        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new AuthResponse(profile, cookie);
     }
 
 
@@ -53,7 +56,13 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalStateException("User should exist after successful authentication"));
 
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        ResponseCookie cookie = jwtService.generateCookie(token);
+        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new AuthResponse(profile, cookie);
+    }
+
+    public ResponseCookie logout() {
+        return jwtService.clearCookie();
     }
 
     public UserProfileResponse getCurrentUser(User user) {

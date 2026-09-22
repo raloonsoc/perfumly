@@ -34,7 +34,7 @@ the tutorial-project level.
 | JWT authentication (register / login) | ✅ Done |
 | User reviews & ratings | ✅ Done |
 | Favorites | ✅ Done |
-| Bearer token cookies | ⏳ Planned |
+| HttpOnly cookie authentication | ✅ Done |
 | Accord-based recommender | ⏳ Planned |
 | Frontend | ⏳ Planned |
 | Production deployment | ⏳ Planned |
@@ -90,22 +90,31 @@ Schema evolution is fully managed through versioned Flyway migrations
 ### API
 
 Catalog and auth entry points (`/api/perfumes/**`, `/api/auth/**`) are public;
-everything else requires a valid JWT by default (see `SecurityConfig`).
+everything else requires authentication by default (see `SecurityConfig`).
+
+Authentication is session-less and JWT-based, but the token is never exposed in a
+JSON response body. `register` and `login` set it as an `httpOnly`, `SameSite=Lax`
+cookie named `jwt`; the browser sends it back automatically on every request. An
+`Authorization: Bearer <token>` header is also accepted as a fallback (useful for
+Postman/CLI testing) — the cookie takes precedence when both are present. CORS is
+enabled for `http://localhost:3000` with `Access-Control-Allow-Credentials: true` so
+the frontend can rely on the cookie across origins.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/perfumes` | Public | Paginated catalog listing. Supports `gender`, `brandId`, and `search` query params |
 | `GET` | `/api/perfumes/{id}` | Public | Full detail for a single perfume (brand, notes, accords) |
-| `POST` | `/api/auth/register` | Public | Create a new user account, returns a JWT |
-| `POST` | `/api/auth/login` | Public | Authenticate with credentials, returns a JWT |
-| `GET` | `/api/auth/me` | Bearer JWT | Current authenticated user's profile |
+| `POST` | `/api/auth/register` | Public | Create a new user account. Sets the `jwt` cookie, returns the user's profile |
+| `POST` | `/api/auth/login` | Public | Authenticate with credentials. Sets the `jwt` cookie, returns the user's profile |
+| `POST` | `/api/auth/logout` | Public | Clears the `jwt` cookie |
+| `GET` | `/api/auth/me` | Cookie / Bearer | Current authenticated user's profile |
 | `GET` | `/api/perfumes/{perfumeId}/reviews` | Public | Paginated list of reviews for a perfume |
-| `POST` | `/api/perfumes/{perfumeId}/reviews` | Bearer JWT | Create a review (rating 1–10 + description). `409` if the user already reviewed this perfume |
-| `PUT` | `/api/reviews/{id}` | Bearer JWT | Update your own review. `403` if it belongs to another user |
-| `DELETE` | `/api/reviews/{id}` | Bearer JWT | Delete your own review. `403` if it belongs to another user |
-| `GET` | `/api/users/me/favorites` | Bearer JWT | Paginated list of the current user's favorite perfumes |
-| `POST` | `/api/users/me/favorites/{perfumeId}` | Bearer JWT | Add a perfume to favorites. `409` if already favorited |
-| `DELETE` | `/api/users/me/favorites/{perfumeId}` | Bearer JWT | Remove a perfume from favorites. `404` if not favorited |
+| `POST` | `/api/perfumes/{perfumeId}/reviews` | Cookie / Bearer | Create a review (rating 1–10 + description). `409` if the user already reviewed this perfume |
+| `PUT` | `/api/reviews/{id}` | Cookie / Bearer | Update your own review. `403` if it belongs to another user |
+| `DELETE` | `/api/reviews/{id}` | Cookie / Bearer | Delete your own review. `403` if it belongs to another user |
+| `GET` | `/api/users/me/favorites` | Cookie / Bearer | Paginated list of the current user's favorite perfumes |
+| `POST` | `/api/users/me/favorites/{perfumeId}` | Cookie / Bearer | Add a perfume to favorites. `409` if already favorited |
+| `DELETE` | `/api/users/me/favorites/{perfumeId}` | Cookie / Bearer | Remove a perfume from favorites. `404` if not favorited |
 
 Responses use dedicated DTOs — JPA entities are never exposed directly.
 
@@ -160,6 +169,7 @@ bun dev
 - [x] JWT authentication (register / login)
 - [x] Reviews & ratings
 - [x] Favorites
+- [x] HttpOnly cookie authentication
 - [ ] Accord-similarity recommender
 - [ ] Frontend implementation
 - [ ] Production deployment
