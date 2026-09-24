@@ -35,8 +35,10 @@ the tutorial-project level.
 | User reviews & ratings | ✅ Done |
 | Favorites | ✅ Done |
 | HttpOnly cookie authentication | ✅ Done |
+| Frontend: home, catalogue, theming | ✅ Done |
+| Frontend: login / register | ✅ Done |
+| Frontend: reviews & favorites UI | ⏳ Planned |
 | Accord-based recommender | ⏳ Planned |
-| Frontend | ⏳ Planned |
 | Production deployment | ⏳ Planned |
 
 ## Tech stack
@@ -50,7 +52,7 @@ the tutorial-project level.
 
 **Frontend** — [`frontend/`](frontend)
 - Next.js 16 (App Router) + React 19 + TypeScript
-- Tailwind CSS 4
+- Tailwind CSS 4, shadcn/ui (`base-luma` style) on Base UI
 - No Vercel: deployed via Docker on self-managed infrastructure (homelab / VPS)
 
 **Infrastructure**
@@ -118,6 +120,19 @@ the frontend can rely on the cookie across origins.
 
 Responses use dedicated DTOs — JPA entities are never exposed directly.
 
+### Frontend
+
+Next.js App Router with Server Components by default — routes are fetched and
+rendered on the server (`app/page.tsx`, `app/perfumes/page.tsx`), and `"use client"`
+is reserved for actual interactivity (filters, theme toggle, forms). Catalogue
+filter/search state lives in the URL (`searchParams`), not component state, so
+results stay shareable and bookmarkable while keeping SSR on first load.
+
+Implemented pages: home, catalogue (pagination, filters, search, brand combobox),
+perfume favouriting, light/dark theming, login and register, and styled 404 / 500
+error pages. Reviews and favorites currently have a backend API but no dedicated UI
+yet.
+
 ## Catalog data source
 
 The catalog is imported from the public Kaggle dataset
@@ -170,8 +185,9 @@ bun dev
 - [x] Reviews & ratings
 - [x] Favorites
 - [x] HttpOnly cookie authentication
+- [x] Frontend: home, catalogue, theming, auth pages
+- [ ] Frontend: reviews & favorites UI
 - [ ] Accord-similarity recommender
-- [ ] Frontend implementation
 - [ ] Production deployment
 
 ## License

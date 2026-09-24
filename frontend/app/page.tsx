@@ -3,6 +3,7 @@ import { Heart, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeaturedPerfume } from "@/components/featured-perfume";
 import { PerfumeCard } from "@/components/perfume-card";
+import { PageTransition } from "@/components/page-transition";
 import { apiFetch } from "@/lib/api";
 import { PerfumeSummary, PageResponse } from "@/lib/types";
 
@@ -26,23 +27,19 @@ const memberBenefits = [
 
 export default async function Home() {
   const data = await apiFetch<PageResponse<PerfumeSummary>>("/api/perfumes");
-  const featured = data.content[0];
+  const featured = data.content[9];
   const highlights = data.content.slice(1, 7);
 
   return (
+    <PageTransition>
     <main className="pt-24">
       <section className="relative">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
         >
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse 50% 40% at 75% 45%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 70%)",
-            }}
-          />
+          <div className="hero-glow hero-glow-light absolute inset-0" />
+          <div className="hero-glow hero-glow-dark absolute inset-0" />
         </div>
         <div className="container mx-auto px-4 py-16">
           <div className="grid md:grid-cols-2 gap-10 items-center">
@@ -125,5 +122,6 @@ export default async function Home() {
         </div>
       </section>
     </main>
+    </PageTransition>
   );
 }

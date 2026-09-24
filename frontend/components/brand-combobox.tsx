@@ -32,9 +32,10 @@ export function BrandCombobox({
   async function fetchBrands(search: string) {
     setLoading(true)
     try {
-      const data = await apiFetch<PageResponse<BrandSummary>>(
-        `/api/brands?search=${encodeURIComponent(search)}&size=10`
-      )
+      const query = search
+        ? `search=${encodeURIComponent(search)}&size=10`
+        : `size=10`
+      const data = await apiFetch<PageResponse<BrandSummary>>(`/api/brands?${query}`)
       setItems(data.content)
     } catch {
       setItems([])
@@ -42,6 +43,11 @@ export function BrandCombobox({
       setLoading(false)
     }
   }
+
+  React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial brand list fetch on mount
+    fetchBrands("")
+  }, [])
 
   function handleValueChange(value: BrandSummary | null) {
     const params = new URLSearchParams(searchParams.toString())
@@ -63,7 +69,7 @@ export function BrandCombobox({
       onValueChange={handleValueChange}
       onInputValueChange={(value) => {
         if (value.length >= 2) fetchBrands(value)
-        else setItems([])
+        else if (value.length === 0) fetchBrands("")
       }}
       itemToStringLabel={(item) => item.name}
       isItemEqualToValue={(a, b) => a.id === b.id}

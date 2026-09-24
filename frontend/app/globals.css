@@ -120,11 +120,78 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
   }
   body {
     @apply bg-background text-foreground;
   }
   html {
     @apply font-sans;
+  }
+}
+
+.grain-texture {
+  position: relative;
+}
+.grain-texture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='noise'/%3E%3CfeColorMatrix in='noise' type='matrix' values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 1 0' result='gray'/%3E%3CfeComponentTransfer in='gray'%3E%3CfeFuncR type='linear' slope='0.35' intercept='0.32'/%3E%3CfeFuncG type='linear' slope='0.35' intercept='0.32'/%3E%3CfeFuncB type='linear' slope='0.35' intercept='0.32'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.hero-glow {
+  background: radial-gradient(ellipse 50% 40% at 75% 45%, var(--glow-color), transparent 70%);
+  transition: opacity 200ms ease;
+}
+.hero-glow-center {
+  background: radial-gradient(ellipse 60% 45% at 50% 35%, var(--glow-color), transparent 70%);
+}
+.hero-glow-light {
+  --glow-color: oklch(0.391 0.125 17.9 / 10%);
+  opacity: 1;
+}
+.hero-glow-dark {
+  --glow-color: oklch(0.742 0.110 13.6 / 10%);
+  opacity: 0;
+}
+.dark .hero-glow-light {
+  opacity: 0;
+}
+.dark .hero-glow-dark {
+  opacity: 1;
+}
+
+::view-transition-old(.page-fade) {
+  animation: 150ms ease-out both page-fade-out;
+}
+::view-transition-new(.page-fade) {
+  animation: 200ms ease-in 100ms both page-fade-in;
+}
+
+@keyframes page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

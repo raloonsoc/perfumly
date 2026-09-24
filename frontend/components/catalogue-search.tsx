@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
-import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { useCatalogueTransition } from "@/components/catalogue-filters"
+import { Search } from "lucide-react"
 
 export function CatalogueSearch({ defaultValue }: { defaultValue?: string }) {
   const searchParams = useSearchParams()
@@ -28,12 +29,17 @@ export function CatalogueSearch({ defaultValue }: { defaultValue?: string }) {
   }, [value])
 
   return (
-    <Input
-      type="search"
-      placeholder="Search by name…"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      className="w-full sm:max-w-xs rounded-full"
-    />
+    <InputGroup className="max-w-xs">
+      <InputGroupInput
+        type="search"
+        placeholder="Search by name…"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full sm:max-w-xs rounded-full"
+      />
+      <InputGroupAddon>
+        <Search />
+      </InputGroupAddon>
+    </InputGroup>
   )
 }

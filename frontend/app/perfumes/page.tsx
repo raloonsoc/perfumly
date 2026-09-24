@@ -1,5 +1,6 @@
 import { PerfumeCard } from "@/components/perfume-card";
 import { CatalogueFilters } from "@/components/catalogue-filters";
+import { PageTransition } from "@/components/page-transition";
 import {
   Pagination,
   PaginationContent,
@@ -40,6 +41,7 @@ export default async function CataloguePage({
   const data = await apiFetch<PageResponse<PerfumeSummary>>(`/api/perfumes?${query.toString()}`);
 
   return (
+    <PageTransition>
     <main className="pt-24">
       <div className="container mx-auto px-4 py-12">
         <h1 className="font-serif text-3xl md:text-4xl">Catalogue</h1>
@@ -96,6 +98,7 @@ export default async function CataloguePage({
           </CatalogueFilters>
         </div>
       </div>
-    </main>
+      </main>
+    </PageTransition>
   );
 }
