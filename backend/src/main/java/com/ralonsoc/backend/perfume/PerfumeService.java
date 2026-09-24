@@ -17,8 +17,9 @@ public class PerfumeService {
 
     public Page<PerfumeSummaryResponse> listPerfumes(Gender gender, UUID brandId, Pageable pageable) {
         Page<Perfume> perfumes;
-
-        if (gender != null) {
+        if (gender != null && brandId != null) {
+            perfumes = perfumeRepository.findByGenderAndBrandId(gender, brandId, pageable);
+        } else if (gender != null) {
             perfumes = perfumeRepository.findByGender(gender, pageable);
         } else if (brandId != null) {
             perfumes = perfumeRepository.findByBrandId(brandId, pageable);

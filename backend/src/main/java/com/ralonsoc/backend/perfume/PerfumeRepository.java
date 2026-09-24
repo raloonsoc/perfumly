@@ -13,6 +13,8 @@ public interface PerfumeRepository extends JpaRepository<Perfume, UUID> {
 
     Page<Perfume> findByBrandId(UUID brandId, Pageable pageable);
 
+    Page<Perfume> findByGenderAndBrandId(Gender gender, UUID brandId, Pageable pageable);
+
     @Query("SELECT p FROM Perfume p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%'))")
     Page<Perfume> searchByName(String query, Pageable pageable);
 }

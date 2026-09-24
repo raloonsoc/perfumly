@@ -121,9 +121,9 @@ Responses use dedicated DTOs — JPA entities are never exposed directly.
 ## Catalog data source
 
 The catalog is imported from the public Kaggle dataset
-[**"Fragrantica.com Fragrance Dataset"**](https://www.kaggle.com/datasets), originally
-scraped from [Fragrantica.com](https://www.fragrantica.com) by a third party and
-republished on Kaggle. Only objective catalog data is used (brand, notes, accords,
+[**"Fragrantica.com Fragrance Dataset"**](https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset/data),
+originally scraped from [Fragrantica.com](https://www.fragrantica.com) by a third party
+and republished on Kaggle. Only objective catalog data is used (brand, notes, accords,
 year, gender) — no user reviews or photos from Fragrantica.
 
 | | |

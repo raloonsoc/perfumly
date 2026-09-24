@@ -1,0 +1,20 @@
+"use client"
+
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
+
+export default function Navbar() {
+  return (
+    <header className="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+      <nav className="flex items-center gap-6 rounded-full border border-border bg-card/70 backdrop-blur-md px-5 py-2.5 shadow-sm">
+        <Link href="/" className="font-serif text-lg font-semibold">Perfumly</Link>
+        <Link href="/perfumes" className="text-sm text-muted-foreground hover:text-foreground">Catalogue</Link>
+        <div className="flex items-center gap-2 ml-2">
+          <ThemeToggle />
+          <Button size="sm" nativeButton={false} render={<Link href="/login" />}>Log in</Button>
+        </div>
+      </nav>
+    </header>
+  )
+}
