@@ -37,6 +37,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(HttpServletResponse response) {
         response.addHeader(HttpHeaders.SET_COOKIE, jwtService.clearCookie().toString());
     }

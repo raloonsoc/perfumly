@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { QueryProvider } from "@/components/query-provider";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -29,16 +30,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={cn("h-full", "antialiased", "font-sans", inter.variable, playfairDisplay.variable)}
     >
-      <body>
-        <ThemeProvider
-                  attribute="class"
-                  defaultTheme="system"
-                  enableSystem
-        >
-          <Navbar />
-                  {children}
-                  <Footer />
-                </ThemeProvider></body>
+      <body suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <QueryProvider>
+            <Navbar />
+            {children}
+            <Footer />
+          </QueryProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -6,8 +6,8 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import { RegisterForm } from "@/components/register-form"
 import { PageTransition } from "@/components/page-transition"
+import { RegisterFormClient } from "@/components/register-form-client";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -27,7 +27,7 @@ export default function RegisterPage() {
             <CardDescription>Join Perfumly to rate, review and save fragrances</CardDescription>
           </CardHeader>
           <CardContent>
-            <RegisterForm />
+            <RegisterFormClient />
           </CardContent>
         </Card>
       </main>

@@ -2,11 +2,19 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { InputGroup, InputGroupInput, InputGroupButton } from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
+import { cn } from "cn"
+
+// Mirrors RegisterRequest's @Pattern in the backend (min 8 chars, upper, lower, digit, special char).
+const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=[\]{};:'",.<>/\\|~`]).{8,}$/
+
+function isPasswordValid(password: string) {
+  return PASSWORD_PATTERN.test(password)
+}
 
 export interface RegisterFormValues {
   username: string
@@ -32,6 +40,8 @@ export function RegisterForm({ onSubmit, isLoading, error, fieldErrors }: Regist
   const [confirmPassword, setConfirmPassword] = React.useState("")
 
   const mismatch = confirmPassword.length > 0 && password !== confirmPassword
+  const passwordTouched = password.length > 0
+  const passwordValid = isPasswordValid(password)
 
   function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -81,7 +91,7 @@ export function RegisterForm({ onSubmit, isLoading, error, fieldErrors }: Regist
         {fieldErrors?.email ? <FieldError match>{fieldErrors.email}</FieldError> : null}
       </Field>
 
-      <Field name="password" invalid={!!fieldErrors?.password}>
+      <Field name="password" invalid={(passwordTouched && !passwordValid) || !!fieldErrors?.password}>
         <FieldLabel>Password</FieldLabel>
         <InputGroup>
           <InputGroupInput
@@ -92,6 +102,7 @@ export function RegisterForm({ onSubmit, isLoading, error, fieldErrors }: Regist
             disabled={isLoading}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={passwordTouched && !passwordValid}
             required
           />
           <InputGroupButton
@@ -104,7 +115,19 @@ export function RegisterForm({ onSubmit, isLoading, error, fieldErrors }: Regist
             {showPassword ? <EyeOff /> : <Eye />}
           </InputGroupButton>
         </InputGroup>
-        {fieldErrors?.password ? <FieldError match>{fieldErrors.password}</FieldError> : null}
+        {passwordTouched ? (
+          <p
+            className={cn(
+              "flex items-center gap-1 text-xs",
+              passwordValid ? "text-emerald-600 dark:text-emerald-500" : "text-destructive"
+            )}
+          >
+            {passwordValid ? <Check className="size-3.5" /> : <X className="size-3.5" />}
+            Min. 8 characters, with uppercase, lowercase, a number and a special character
+          </p>
+        ) : fieldErrors?.password ? (
+          <FieldError match>{fieldErrors.password}</FieldError>
+        ) : null}
       </Field>
 
       <Field name="confirmPassword" invalid={mismatch || !!fieldErrors?.confirmPassword}>
@@ -138,7 +161,7 @@ export function RegisterForm({ onSubmit, isLoading, error, fieldErrors }: Regist
         ) : null}
       </Field>
 
-      <Button type="submit" className="mt-2 w-full" disabled={isLoading || mismatch}>
+      <Button type="submit" className="mt-2 w-full" disabled={isLoading || mismatch || !passwordValid}>
         {isLoading ? "Creating account…" : "Create account"}
       </Button>
 

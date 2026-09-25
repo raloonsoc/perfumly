@@ -6,8 +6,8 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card"
-import { LoginForm } from "@/components/login-form"
 import { PageTransition } from "@/components/page-transition"
+import { LoginFormClient } from "@/components/login-form-client";
 
 export const metadata: Metadata = {
   title: "Log in",
@@ -27,7 +27,7 @@ export default function LoginPage() {
             <CardDescription>Log in to your Perfumly account</CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginForm />
+            <LoginFormClient />
           </CardContent>
         </Card>
       </main>
