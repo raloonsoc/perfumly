@@ -22,6 +22,9 @@ public class JwtService {
     @Value("${app.jwt.expiration-ms}")
     private long expirationMs;
 
+    @Value("${app.jwt.cookie-secure}")
+    private boolean cookieSecure;
+
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
@@ -52,7 +55,7 @@ public class JwtService {
     public ResponseCookie generateCookie(String token) {
         return ResponseCookie.from("jwt", token)
                 .httpOnly(true)
-                .secure(false) // only true in prod
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofMillis(expirationMs))
@@ -62,7 +65,7 @@ public class JwtService {
     public ResponseCookie clearCookie() {
         return ResponseCookie.from("jwt", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(0)
