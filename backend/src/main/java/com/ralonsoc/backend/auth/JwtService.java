@@ -30,6 +30,9 @@ public class JwtService {
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
+    @Value("${app.jwt.refresh-expiration-remember-me-ms}")
+    private long refreshExpirationRememberMeMs;
+
     @Value("${app.jwt.cookie-secure}")
     private boolean cookieSecure;
 
@@ -80,8 +83,9 @@ public class JwtService {
         return buildCookie(ACCESS_COOKIE_NAME, "", Duration.ZERO);
     }
 
-    public ResponseCookie generateRefreshCookie(String token) {
-        return buildCookie(REFRESH_COOKIE_NAME, token, Duration.ofMillis(refreshExpirationMs));
+    public ResponseCookie generateRefreshCookie(String token, boolean rememberMe) {
+        long ttl = rememberMe ? refreshExpirationRememberMeMs : refreshExpirationMs;
+        return buildCookie(REFRESH_COOKIE_NAME, token, Duration.ofMillis(ttl));
     }
 
     public ResponseCookie clearRefreshCookie() {

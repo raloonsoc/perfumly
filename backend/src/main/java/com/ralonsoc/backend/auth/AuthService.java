@@ -163,7 +163,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalStateException("User should exist after successful authentication"));
 
-        return buildAuthResponse(user);
+        return buildAuthResponse(user, request.rememberMe());
     }
 
     // Reads the refresh token cookie, rotates it (old one revoked, new one issued) and
@@ -178,24 +178,22 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(InvalidTokenException::new);
 
-        String rotatedRefreshToken = refreshTokenService.rotate(refreshToken, user);
+        var rotated = refreshTokenService.rotate(refreshToken, user);
 
         String accessToken = jwtService.generateToken(user);
         ResponseCookie accessCookie = jwtService.generateAccessCookie(accessToken);
-        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(rotatedRefreshToken);
-        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
-        return new AuthResponse(profile, accessCookie, refreshCookie);
+        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(rotated.token(), rotated.rememberMe());
+        return new AuthResponse(toProfileResponse(user), accessCookie, refreshCookie);
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    private AuthResponse buildAuthResponse(User user, boolean rememberMe) {
         String accessToken = jwtService.generateToken(user);
         ResponseCookie accessCookie = jwtService.generateAccessCookie(accessToken);
 
-        String refreshToken = refreshTokenService.issue(user);
-        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(refreshToken);
+        String refreshToken = refreshTokenService.issue(user, rememberMe);
+        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(refreshToken, rememberMe);
 
-        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
-        return new AuthResponse(profile, accessCookie, refreshCookie);
+        return new AuthResponse(toProfileResponse(user), accessCookie, refreshCookie);
     }
 
     public void logout(String refreshToken) {
@@ -212,6 +210,10 @@ public class AuthService {
     }
 
     public UserProfileResponse getCurrentUser(User user) {
-        return new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
+        return toProfileResponse(user);
+    }
+
+    private UserProfileResponse toProfileResponse(User user) {
+        return new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 }
