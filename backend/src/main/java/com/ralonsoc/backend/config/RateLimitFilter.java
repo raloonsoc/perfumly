@@ -23,12 +23,18 @@ import java.util.function.Supplier;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     // Login: brute-force protection, tight window. Register: signup-spam protection, looser.
+    // Forgot-password: mirrors login's window — without it, since the response is always a
+    // generic 200 (to avoid leaking which emails exist), anyone could spam reset emails at
+    // an arbitrary victim's inbox with no feedback loop to stop them.
     private static final Map<String, Supplier<BucketConfiguration>> LIMITED_PATHS = Map.of(
             "/api/auth/login", () -> BucketConfiguration.builder()
                     .addLimit(Bandwidth.builder().capacity(5).refillGreedy(5, Duration.ofMinutes(1)).build())
                     .build(),
             "/api/auth/register", () -> BucketConfiguration.builder()
                     .addLimit(Bandwidth.builder().capacity(5).refillGreedy(5, Duration.ofHours(1)).build())
+                    .build(),
+            "/api/auth/forgot-password", () -> BucketConfiguration.builder()
+                    .addLimit(Bandwidth.builder().capacity(5).refillGreedy(5, Duration.ofMinutes(1)).build())
                     .build()
     );
 

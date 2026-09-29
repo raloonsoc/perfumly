@@ -8,13 +8,7 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { InputGroup, InputGroupInput, InputGroupButton } from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
 import { cn } from "cn"
-
-// Mirrors RegisterRequest's @Pattern in the backend (min 8 chars, upper, lower, digit, special char).
-const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-=[\]{};:'",.<>/\\|~`]).{8,}$/
-
-function isPasswordValid(password: string) {
-  return PASSWORD_PATTERN.test(password)
-}
+import { isPasswordValid } from "@/lib/password"
 
 export interface RegisterFormValues {
   username: string

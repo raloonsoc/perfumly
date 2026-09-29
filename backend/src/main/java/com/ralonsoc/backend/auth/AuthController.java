@@ -1,9 +1,12 @@
 package com.ralonsoc.backend.auth;
 
 import com.ralonsoc.backend.auth.dto.AuthResponse;
+import com.ralonsoc.backend.auth.dto.ForgotPasswordRequest;
 import com.ralonsoc.backend.auth.dto.LoginRequest;
+import com.ralonsoc.backend.auth.dto.MessageResponse;
 import com.ralonsoc.backend.auth.dto.RegisterRequest;
 import com.ralonsoc.backend.auth.dto.RegisterResponse;
+import com.ralonsoc.backend.auth.dto.ResetPasswordRequest;
 import com.ralonsoc.backend.auth.dto.UserProfileResponse;
 import com.ralonsoc.backend.user.User;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +35,16 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
+    }
+
+    @PostMapping("/forgot-password")
+    public MessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    @PostMapping("/reset-password")
+    public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return authService.resetPassword(request);
     }
 
     @PostMapping("/login")
