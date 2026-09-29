@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldLabel, FieldError } from "@/components/ui/field"
 import { InputGroup, InputGroupInput, InputGroupButton } from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input"
 export interface LoginFormValues {
   email: string
   password: string
+  rememberMe: boolean
 }
 
 interface LoginFormProps {
@@ -26,6 +28,7 @@ interface LoginFormProps {
 
 export function LoginForm({ onSubmit, isLoading, error, fieldErrors }: LoginFormProps) {
   const [showPassword, setShowPassword] = React.useState(false)
+  const [rememberMe, setRememberMe] = React.useState(false)
 
   function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -33,6 +36,7 @@ export function LoginForm({ onSubmit, isLoading, error, fieldErrors }: LoginForm
     onSubmit?.({
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
+      rememberMe,
     })
   }
 
@@ -88,6 +92,15 @@ export function LoginForm({ onSubmit, isLoading, error, fieldErrors }: LoginForm
         </InputGroup>
         {fieldErrors?.password ? <FieldError match>{fieldErrors.password}</FieldError> : null}
       </Field>
+
+      <label className="flex items-center gap-2 text-sm font-normal text-foreground">
+        <Checkbox
+          checked={rememberMe}
+          onCheckedChange={(checked) => setRememberMe(checked === true)}
+          disabled={isLoading}
+        />
+        Remember me
+      </label>
 
       <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
         {isLoading ? "Signing in…" : "Sign in"}

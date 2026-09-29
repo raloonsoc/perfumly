@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
+export type Role = "USER" | "ADMIN";
+
 interface CurrentUser {
   id: string;
   username: string;
   email: string;
+  role: Role;
 }
 
 
@@ -42,7 +45,7 @@ export function useLogoutAllSessions() {
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (credentials: { email: string, password: string }) => apiFetch<CurrentUser>("/api/auth/login", { method: "POST", body: JSON.stringify(credentials) }),
+    mutationFn: (credentials: { email: string, password: string, rememberMe: boolean }) => apiFetch<CurrentUser>("/api/auth/login", { method: "POST", body: JSON.stringify(credentials) }),
     onSuccess: (user) => {
       queryClient.setQueryData(["auth", "me"], user)
     }
