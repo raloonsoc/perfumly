@@ -3,6 +3,7 @@ package com.ralonsoc.backend.auth;
 import com.ralonsoc.backend.auth.dto.AuthResponse;
 import com.ralonsoc.backend.auth.dto.LoginRequest;
 import com.ralonsoc.backend.auth.dto.RegisterRequest;
+import com.ralonsoc.backend.auth.dto.RegisterResponse;
 import com.ralonsoc.backend.auth.dto.UserProfileResponse;
 import com.ralonsoc.backend.user.User;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,10 +24,14 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserProfileResponse register(@Valid @RequestBody RegisterRequest request, HttpServletResponse response) {
-        var result = authService.register(request);
-        response.addHeader(HttpHeaders.SET_COOKIE, result.cookie().toString());
-        return result.profile();
+    public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
+        return authService.register(request);
+    }
+
+    @GetMapping("/verify-email")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
     }
 
     @PostMapping("/login")

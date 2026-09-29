@@ -1,7 +1,10 @@
 package com.ralonsoc.backend.common.exception;
 
 import com.ralonsoc.backend.auth.EmailAlreadyInUseException;
+import com.ralonsoc.backend.auth.EmailNotVerifiedException;
 import com.ralonsoc.backend.auth.InvalidCredentialsException;
+import com.ralonsoc.backend.auth.InvalidTokenException;
+import com.ralonsoc.backend.auth.TokenExpiredException;
 import com.ralonsoc.backend.auth.UsernameAlreadyInUseException;
 import com.ralonsoc.backend.perfume.PerfumeNotFoundException;
 import com.ralonsoc.backend.review.DuplicateReviewException;
@@ -71,6 +74,21 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.GONE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ReviewNotFoundException.class)

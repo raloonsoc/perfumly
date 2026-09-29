@@ -39,12 +39,21 @@ export function useLogin() {
   });
 }
 
+interface RegisterResponse {
+  message: string;
+}
+
 export function useRegister() {
-  const queryClient = useQueryClient();
+  // Registration no longer logs the user in (email must be verified first),
+  // so there's no "auth", "me" cache to update here.
   return useMutation({
-    mutationFn: (credentials: { username: string, email: string, password: string }) => apiFetch<CurrentUser>("/api/auth/register", { method: "POST", body: JSON.stringify(credentials) }),
-    onSuccess: (user) => {
-      queryClient.setQueryData(["auth", "me"], user)
-    }
+    mutationFn: (credentials: { username: string, email: string, password: string }) =>
+      apiFetch<RegisterResponse>("/api/auth/register", { method: "POST", body: JSON.stringify(credentials) }),
+  });
+}
+
+export function useVerifyEmail() {
+  return useMutation({
+    mutationFn: (token: string) => apiFetch<void>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
   });
 }

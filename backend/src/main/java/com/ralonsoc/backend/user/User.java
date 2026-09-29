@@ -43,6 +43,9 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     private Role role = Role.USER;
 
+    @Column(nullable = false)
+    private boolean emailVerified;
+
     @NotBlank(message = "Password can't be empty")
     @Column(nullable = false)
     private String password;
@@ -81,6 +84,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return emailVerified;
     }
 }

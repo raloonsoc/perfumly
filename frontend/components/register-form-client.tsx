@@ -13,7 +13,7 @@ export function RegisterFormClient() {
       error={register.isError ? register.error?.message ?? "Something went wrong. Please try again." : null}
       onSubmit={({ username, email, password }) => {
         register.mutate({ username, email, password }, {
-          onSuccess: () => router.push("/")
+          onSuccess: () => router.push("/check-email")
         })
       }}
     />
