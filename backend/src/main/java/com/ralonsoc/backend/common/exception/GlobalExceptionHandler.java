@@ -4,6 +4,7 @@ import com.ralonsoc.backend.auth.EmailAlreadyInUseException;
 import com.ralonsoc.backend.auth.EmailNotVerifiedException;
 import com.ralonsoc.backend.auth.InvalidCredentialsException;
 import com.ralonsoc.backend.auth.InvalidTokenException;
+import com.ralonsoc.backend.auth.SamePasswordException;
 import com.ralonsoc.backend.auth.TokenExpiredException;
 import com.ralonsoc.backend.auth.UsernameAlreadyInUseException;
 import com.ralonsoc.backend.perfume.PerfumeNotFoundException;
@@ -89,6 +90,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TokenExpiredException.class)
     public ResponseEntity<ErrorResponse> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
         return buildError(HttpStatus.GONE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(SamePasswordException.class)
+    public ResponseEntity<ErrorResponse> handleSamePassword(SamePasswordException ex, HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ReviewNotFoundException.class)

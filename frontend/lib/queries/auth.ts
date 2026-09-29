@@ -57,3 +57,21 @@ export function useVerifyEmail() {
     mutationFn: (token: string) => apiFetch<void>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
   });
 }
+
+interface MessageResponse {
+  message: string;
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) =>
+      apiFetch<MessageResponse>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (credentials: { token: string, newPassword: string }) =>
+      apiFetch<MessageResponse>("/api/auth/reset-password", { method: "POST", body: JSON.stringify(credentials) }),
+  });
+}

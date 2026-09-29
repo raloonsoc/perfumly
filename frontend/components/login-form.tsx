@@ -63,7 +63,7 @@ export function LoginForm({ onSubmit, isLoading, error, fieldErrors }: LoginForm
       <Field name="password" invalid={!!fieldErrors?.password}>
         <div className="flex items-center justify-between">
           <FieldLabel>Password</FieldLabel>
-          <Link href="#" className="text-xs text-muted-foreground hover:text-foreground">
+          <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-foreground">
             Forgot password?
           </Link>
         </div>

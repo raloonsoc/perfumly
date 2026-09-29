@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 public class EmailService {
 
     private static final String VERIFY_EMAIL_TEMPLATE_PATH = "templates/email/verify-email.html";
+    private static final String RESET_PASSWORD_TEMPLATE_PATH = "templates/email/reset-password.html";
 
     private final Resend resend;
 
@@ -25,10 +26,12 @@ public class EmailService {
     private String fromEmail;
 
     private String verifyEmailTemplate;
+    private String resetPasswordTemplate;
 
     @PostConstruct
     void loadTemplates() {
         verifyEmailTemplate = readTemplate(VERIFY_EMAIL_TEMPLATE_PATH);
+        resetPasswordTemplate = readTemplate(RESET_PASSWORD_TEMPLATE_PATH);
     }
 
     private String readTemplate(String path) {
@@ -43,26 +46,34 @@ public class EmailService {
     }
 
     public void sendVerificationEmail(String to, String verificationLink) {
-        if (to.isEmpty() || verificationLink.isEmpty()) {
-            log.warn("Skipping verification email: missing to/verificationLink");
+        String html = verifyEmailTemplate.replace("{{verificationLink}}", verificationLink);
+        sendHtmlEmail(to, "Verify your Perfumly account", html);
+    }
+
+    public void sendPasswordResetEmail(String to, String resetLink) {
+        String html = resetPasswordTemplate.replace("{{resetLink}}", resetLink);
+        sendHtmlEmail(to, "Reset your Perfumly password", html);
+    }
+
+    private void sendHtmlEmail(String to, String subject, String html) {
+        if (to.isEmpty()) {
+            log.warn("Skipping email \"{}\": missing recipient", subject);
             return;
         }
-
-        String html = verifyEmailTemplate.replace("{{verificationLink}}", verificationLink);
 
         try {
             CreateEmailOptions options = CreateEmailOptions.builder()
                     .from(fromEmail)
                     .to(to)
-                    .subject("Verify your Perfumly account")
+                    .subject(subject)
                     .html(html)
                     .build();
             resend.emails().send(options);
         } catch (Exception e) {
             // The SDK can throw its checked ResendException or an unchecked RuntimeException
             // (e.g. wrapping an HTTP error from the API) depending on the failure — catch
-            // both so a Resend outage never breaks registration, per the fail-open decision.
-            log.error("Failed to send verification email to {}", to, e);
+            // both so a Resend outage never breaks registration/reset, per the fail-open decision.
+            log.error("Failed to send email \"{}\" to {}", subject, to, e);
         }
     }
 
