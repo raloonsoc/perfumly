@@ -29,6 +29,16 @@ export function useLogout() {
   })
 }
 
+export function useLogoutAllSessions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch("/api/auth/logout-all", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.setQueryData(["auth", "me"], null)
+    }
+  })
+}
+
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({

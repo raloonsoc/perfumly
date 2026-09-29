@@ -50,6 +50,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    // Null until the password is changed for the first time; access tokens issued
+    // before this timestamp are rejected by JwtAuthenticationFilter.
+    private Instant passwordChangedAt;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private Instant createdAt;

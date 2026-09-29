@@ -22,22 +22,19 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final RefreshTokenService refreshTokenService;
     private final EmailService emailService;
 
     @Value("${app.frontend-url}")
@@ -73,19 +70,13 @@ public class AuthService {
         VerificationToken verificationToken = new VerificationToken();
         verificationToken.setUser(user);
         verificationToken.setType(TokenType.EMAIL_VERIFICATION);
-        verificationToken.setToken(generateSecureToken());
+        verificationToken.setToken(SecureTokenGenerator.generate());
         verificationToken.setExpiresAt(Instant.now().plusMillis(emailVerificationExpirationMs));
 
         verificationTokenRepository.save(verificationToken);
 
         String verificationLink = frontendUrl + "/verify-email?token=" + verificationToken.getToken();
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
-    }
-
-    private String generateSecureToken() {
-        byte[] randomBytes = new byte[32];
-        SECURE_RANDOM.nextBytes(randomBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
 
     public void verifyEmail(String token) {
@@ -122,7 +113,7 @@ public class AuthService {
         VerificationToken resetToken = new VerificationToken();
         resetToken.setUser(user);
         resetToken.setType(TokenType.PASSWORD_RESET);
-        resetToken.setToken(generateSecureToken());
+        resetToken.setToken(SecureTokenGenerator.generate());
         resetToken.setExpiresAt(Instant.now().plusMillis(passwordResetExpirationMs));
 
         verificationTokenRepository.save(resetToken);
@@ -147,10 +138,16 @@ public class AuthService {
             throw new SamePasswordException();
         }
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        // Rejects any access token already in the wild (JwtService.isTokenValid) and,
+        // combined with the revocation below, ends every session the account has open —
+        // not just the one making this request.
+        user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
 
         resetToken.setUsedAt(Instant.now());
         verificationTokenRepository.save(resetToken);
+
+        refreshTokenService.revokeAllForUser(user.getId());
 
         return new MessageResponse("Your password has been reset. You can now log in with your new password.");
     }
@@ -166,14 +163,52 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new IllegalStateException("User should exist after successful authentication"));
 
-        String token = jwtService.generateToken(user);
-        ResponseCookie cookie = jwtService.generateCookie(token);
-        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
-        return new AuthResponse(profile, cookie);
+        return buildAuthResponse(user);
     }
 
-    public ResponseCookie logout() {
-        return jwtService.clearCookie();
+    // Reads the refresh token cookie, rotates it (old one revoked, new one issued) and
+    // mints a fresh short-lived access token — lets the client stay logged in past the
+    // access token's expiration without re-entering credentials.
+    public AuthResponse refresh(String refreshToken) {
+        if (refreshToken == null) {
+            throw new InvalidTokenException();
+        }
+
+        var userId = refreshTokenService.getUserId(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(InvalidTokenException::new);
+
+        String rotatedRefreshToken = refreshTokenService.rotate(refreshToken, user);
+
+        String accessToken = jwtService.generateToken(user);
+        ResponseCookie accessCookie = jwtService.generateAccessCookie(accessToken);
+        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(rotatedRefreshToken);
+        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new AuthResponse(profile, accessCookie, refreshCookie);
+    }
+
+    private AuthResponse buildAuthResponse(User user) {
+        String accessToken = jwtService.generateToken(user);
+        ResponseCookie accessCookie = jwtService.generateAccessCookie(accessToken);
+
+        String refreshToken = refreshTokenService.issue(user);
+        ResponseCookie refreshCookie = jwtService.generateRefreshCookie(refreshToken);
+
+        UserProfileResponse profile = new UserProfileResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new AuthResponse(profile, accessCookie, refreshCookie);
+    }
+
+    public void logout(String refreshToken) {
+        if (refreshToken != null) {
+            refreshTokenService.revoke(refreshToken);
+        }
+    }
+
+    // Revokes every refresh token the user has, on every device/browser — not just the
+    // one making this request. The caller must still clear its own cookies afterward,
+    // same as a regular logout.
+    public void logoutAllSessions(User user) {
+        refreshTokenService.revokeAllForUser(user.getId());
     }
 
     public UserProfileResponse getCurrentUser(User user) {
