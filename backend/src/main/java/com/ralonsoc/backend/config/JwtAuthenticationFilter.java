@@ -3,6 +3,7 @@ package com.ralonsoc.backend.config;
 import com.ralonsoc.backend.auth.JwtService;
 import com.ralonsoc.backend.user.User;
 import com.ralonsoc.backend.user.UserDetailsServiceImpl;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -41,18 +44,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        try {
+            authenticateFromToken(request, token);
+        } catch (JwtException e) {
+            // Expired, malformed or badly-signed token: treat the request as unauthenticated
+            // rather than letting the exception surface as a 500 — an expired access token is
+            // an expected condition the frontend recovers from via /api/auth/refresh, not a bug.
+            log.debug("Ignoring invalid JWT on {}: {}", request.getRequestURI(), e.getMessage());
+        }
+        filterChain.doFilter(request, response);
+    }
+
+    private void authenticateFromToken(HttpServletRequest request, String token) {
         String email = jwtService.extractEmail(token);
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             User user = (User) userDetails;
-            if (jwtService.isTokenValid(token, user.getEmail())) {
+            if (jwtService.isTokenValid(token, user)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
-        filterChain.doFilter(request, response);
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {

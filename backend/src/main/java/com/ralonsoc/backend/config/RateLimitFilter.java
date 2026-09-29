@@ -35,6 +35,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     .build(),
             "/api/auth/forgot-password", () -> BucketConfiguration.builder()
                     .addLimit(Bandwidth.builder().capacity(5).refillGreedy(5, Duration.ofMinutes(1)).build())
+                    .build(),
+            // Looser than login: a legitimate client can hit this whenever its access token
+            // expires, but it's still an unauthenticated endpoint guessing/brute-forcing a
+            // refresh token value would target.
+            "/api/auth/refresh", () -> BucketConfiguration.builder()
+                    .addLimit(Bandwidth.builder().capacity(20).refillGreedy(20, Duration.ofMinutes(1)).build())
                     .build()
     );
 
