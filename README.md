@@ -31,13 +31,19 @@ the tutorial-project level.
 | Catalog browsing (pagination, filters, search) | ✅ Done |
 | Perfume detail pages (brand, notes, accords) | ✅ Done |
 | Automatic catalog seeding from dataset | ✅ Done |
-| JWT authentication (register / login) | ✅ Done |
+| Auth: register / login / logout | ✅ Done |
+| Auth: JWT access + refresh tokens (rotation, "remember me") | ✅ Done |
+| Auth: email verification | ✅ Done |
+| Auth: forgot / reset password | ✅ Done |
+| Auth: session revocation on password reset, logout-all | ✅ Done |
+| Auth: rate limiting (login, register, forgot-password, refresh) | ✅ Done |
 | User reviews & ratings | ✅ Done |
 | Favorites | ✅ Done |
 | HttpOnly cookie authentication | ✅ Done |
 | Frontend: home, catalogue, theming | ✅ Done |
-| Frontend: login / register | ✅ Done |
+| Frontend: full auth flow (login, register, verify, reset password) | ✅ Done |
 | Frontend: reviews & favorites UI | ⏳ Planned |
+| Frontend: role-based protected routes (guard ready, no page uses it yet) | ⏳ Planned |
 | Accord-based recommender | ⏳ Planned |
 | Production deployment | ⏳ Planned |
 
@@ -47,7 +53,10 @@ the tutorial-project level.
 - Java 25, Spring Boot 4.1.1, Maven (JAR packaging)
 - Spring Web (MVC), Spring Data JPA, Spring Security, Spring Data Redis
 - PostgreSQL 18 (Alpine) as the primary database
+- Redis (AOF persistence) for refresh tokens and rate limiting
 - Flyway for versioned schema migrations
+- [Resend](https://resend.com) for transactional email (verification, password reset)
+- [Bucket4j](https://bucket4j.com) for Redis-backed rate limiting
 - Lombok, Spring Boot DevTools
 
 **Frontend** — [`frontend/`](frontend)
@@ -67,13 +76,15 @@ layered (controller/service/repository) split, keeping each domain self-containe
 
 ```
 com.ralonsoc.backend
-├── config/     SecurityConfig, etc.
+├── config/     SecurityConfig, JwtAuthenticationFilter, RateLimitFilter, RedisConfig
 ├── common/     GlobalExceptionHandler, ErrorResponse (cross-cutting)
 ├── seed/       DataSeeder — initial catalog load
 ├── perfume/    Perfume, Brand, Note, Accord, PerfumeNote, PerfumeAccord + DTOs
-├── user/       User, UserFavorite
+├── user/       User (Role: USER/ADMIN), UserFavorite
 ├── review/     Review
-└── auth/       JWT authentication (register, login, current user)
+├── email/      EmailService (Resend), HTML templates
+└── auth/       Register, login, refresh, logout(-all), email verification,
+                password reset — JWT access + Redis-backed refresh tokens
 ```
 
 ### Data model
@@ -81,8 +92,12 @@ com.ralonsoc.backend
 - `brands`, `perfumes`, `notes`, `accords` — catalog tables
 - `perfume_notes`, `perfume_accords` — join tables with a composite key
   (`@EmbeddedId`); `perfume_accords` also stores `position` (relevance order)
-- `users` (`role`: USER / ADMIN), `user_favorites`, `reviews`
-  (rating 1–10, `UNIQUE(user_id, perfume_id)`)
+- `users` (`role`: USER / ADMIN, `email_verified`, `password_changed_at`),
+  `user_favorites`, `reviews` (rating 1–10, `UNIQUE(user_id, perfume_id)`)
+- `verification_tokens` — single-use, typed (`EMAIL_VERIFICATION` / `PASSWORD_RESET`),
+  independently-expiring tokens backing both email verification and password reset
+- Refresh tokens live in Redis, not Postgres — high-churn (rotated on every use)
+  session state, not data that needs to be queried or audited
 - UUID primary keys throughout, audit timestamps (`created_at` / `updated_at`) via
   Hibernate (`@CreationTimestamp` / `@UpdateTimestamp`)
 
@@ -91,25 +106,39 @@ Schema evolution is fully managed through versioned Flyway migrations
 
 ### API
 
-Catalog and auth entry points (`/api/perfumes/**`, `/api/auth/**`) are public;
-everything else requires authentication by default (see `SecurityConfig`).
+Catalog reads (`GET /api/perfumes/**`, `/api/brands/**`) and most of `/api/auth/**`
+are public; `/api/auth/me` and `/api/auth/logout-all` require a valid session, and
+everything outside `/api/auth/**` requires authentication by default (see
+`SecurityConfig`).
 
-Authentication is session-less and JWT-based, but the token is never exposed in a
-JSON response body. `register` and `login` set it as an `httpOnly`, `SameSite=Lax`
-cookie named `jwt`; the browser sends it back automatically on every request. An
-`Authorization: Bearer <token>` header is also accepted as a fallback (useful for
-Postman/CLI testing) — the cookie takes precedence when both are present. CORS is
-enabled for `http://localhost:3000` with `Access-Control-Allow-Credentials: true` so
-the frontend can rely on the cookie across origins.
+Authentication is JWT-based with two cookies, both `httpOnly` and `SameSite=Lax`:
+`jwt` (short-lived access token) and `refresh_token` (longer-lived, rotated on every
+use). Neither is ever exposed in a JSON response body. `POST /api/auth/refresh` reads
+the refresh cookie, revokes it and issues a new pair — the frontend does this
+automatically when a request comes back `401`. An `Authorization: Bearer <token>`
+header (access token only) is accepted as a fallback for Postman/CLI testing; the
+cookie takes precedence when both are present. CORS is enabled for
+`http://localhost:3000` with `Access-Control-Allow-Credentials: true` so the frontend
+can rely on the cookies across origins.
+
+Registration doesn't log the user in — it sends a verification email, and login is
+rejected until the account is verified. A password reset invalidates every access
+token already issued and revokes every refresh token the account has, ending all of
+its sessions, not just the one that made the request.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/perfumes` | Public | Paginated catalog listing. Supports `gender`, `brandId`, and `search` query params |
 | `GET` | `/api/perfumes/{id}` | Public | Full detail for a single perfume (brand, notes, accords) |
-| `POST` | `/api/auth/register` | Public | Create a new user account. Sets the `jwt` cookie, returns the user's profile |
-| `POST` | `/api/auth/login` | Public | Authenticate with credentials. Sets the `jwt` cookie, returns the user's profile |
-| `POST` | `/api/auth/logout` | Public | Clears the `jwt` cookie |
-| `GET` | `/api/auth/me` | Cookie / Bearer | Current authenticated user's profile |
+| `POST` | `/api/auth/register` | Public | Create a new user account (unverified) and send a verification email |
+| `GET` | `/api/auth/verify-email` | Public | Verify the account for the `token` query param |
+| `POST` | `/api/auth/login` | Public | Authenticate with credentials (`rememberMe` controls the refresh token's lifetime). Sets both cookies, returns the user's profile |
+| `POST` | `/api/auth/refresh` | Public (refresh cookie) | Rotate the refresh token and issue a new access token |
+| `POST` | `/api/auth/forgot-password` | Public | Always returns a generic message; emails a reset link only if the account exists |
+| `POST` | `/api/auth/reset-password` | Public | Set a new password from a reset token; revokes every session on the account |
+| `POST` | `/api/auth/logout` | Public | Revokes the current refresh token, clears both cookies |
+| `POST` | `/api/auth/logout-all` | Cookie / Bearer | Revokes every refresh token for the current user (all sessions/devices) |
+| `GET` | `/api/auth/me` | Cookie / Bearer | Current authenticated user's profile (includes `role`) |
 | `GET` | `/api/perfumes/{perfumeId}/reviews` | Public | Paginated list of reviews for a perfume |
 | `POST` | `/api/perfumes/{perfumeId}/reviews` | Cookie / Bearer | Create a review (rating 1–10 + description). `409` if the user already reviewed this perfume |
 | `PUT` | `/api/reviews/{id}` | Cookie / Bearer | Update your own review. `403` if it belongs to another user |
@@ -129,9 +158,11 @@ filter/search state lives in the URL (`searchParams`), not component state, so
 results stay shareable and bookmarkable while keeping SSR on first load.
 
 Implemented pages: home, catalogue (pagination, filters, search, brand combobox),
-perfume favouriting, light/dark theming, login and register, and styled 404 / 500
-error pages. Reviews and favorites currently have a backend API but no dedicated UI
-yet.
+perfume favouriting, light/dark theming, styled 404 / 500 error pages, and the full
+auth flow — login (with "remember me"), register, check your email, verify email,
+forgot password, reset password. `lib/api.ts`'s `apiFetch` handles token refresh
+transparently, so authenticated requests don't need to think about expiration.
+Reviews and favorites currently have a backend API but no dedicated UI yet.
 
 ## Catalog data source
 
@@ -164,12 +195,15 @@ the database already contains data.
 
 ```bash
 cd backend
-cp .env.example .env   # adjust local credentials
-docker compose up -d   # start PostgreSQL and Redis
+cp .env.example .env   # adjust local credentials, including RESEND_API_KEY/EMAIL_FROM
+docker compose up -d   # start PostgreSQL and Redis (Redis runs with AOF persistence)
 ./mvnw spring-boot:run
 ```
 
-The API is available at `http://localhost:8080`.
+The API is available at `http://localhost:8080`. A Resend API key is required for
+registration/password-reset emails to actually send — get one at
+[resend.com](https://resend.com); on the free tier, sending is limited to your own
+verified address unless you verify a custom domain.
 
 ### Frontend
 
@@ -181,12 +215,14 @@ bun dev
 
 ## Roadmap
 
-- [x] JWT authentication (register / login)
+- [x] Auth: register / login / logout, JWT access + refresh tokens, email
+      verification, password reset, rate limiting, remember-me
 - [x] Reviews & ratings
 - [x] Favorites
 - [x] HttpOnly cookie authentication
-- [x] Frontend: home, catalogue, theming, auth pages
+- [x] Frontend: home, catalogue, theming, full auth flow
 - [ ] Frontend: reviews & favorites UI
+- [ ] Frontend: role-based protected routes (mechanism ready, unused)
 - [ ] Accord-similarity recommender
 - [ ] Production deployment
 
