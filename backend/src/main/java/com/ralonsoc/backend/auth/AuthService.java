@@ -153,6 +153,16 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        // DaoAuthenticationProvider checks account status before the password, which would reveal
+        // that a blocked email exists (RNF-2). Verify the password first, then report the block.
+        userRepository.findByEmail(request.email())
+                .filter(u -> !u.isAccountNonLocked())
+                .ifPresent(u -> {
+                    if (!passwordEncoder.matches(request.password(), u.getPassword())) {
+                        throw new InvalidCredentialsException();
+                    }
+                    throw new AccountBlockedException();
+                });
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         } catch (BadCredentialsException e) {
@@ -177,6 +187,9 @@ public class AuthService {
         var userId = refreshTokenService.getUserId(refreshToken);
         User user = userRepository.findById(userId)
                 .orElseThrow(InvalidTokenException::new);
+        if (!user.isAccountNonLocked()) {
+            throw new AccountBlockedException();
+        }
 
         var rotated = refreshTokenService.rotate(refreshToken, user);
 

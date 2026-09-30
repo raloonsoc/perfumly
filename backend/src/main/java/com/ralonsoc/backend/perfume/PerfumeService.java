@@ -15,28 +15,14 @@ public class PerfumeService {
 
     private final PerfumeRepository perfumeRepository;
 
-    public Page<PerfumeSummaryResponse> listPerfumes(Gender gender, UUID brandId, Pageable pageable) {
-        Page<Perfume> perfumes;
-        if (gender != null && brandId != null) {
-            perfumes = perfumeRepository.findByGenderAndBrandId(gender, brandId, pageable);
-        } else if (gender != null) {
-            perfumes = perfumeRepository.findByGender(gender, pageable);
-        } else if (brandId != null) {
-            perfumes = perfumeRepository.findByBrandId(brandId, pageable);
-        } else {
-            perfumes = perfumeRepository.findAll(pageable);
-        }
-
-        return perfumes.map(this::toSummaryResponse);
-    }
-
-    public Page<PerfumeSummaryResponse> searchPerfumes(String query, Pageable pageable) {
-        return perfumeRepository.searchByName(query, pageable)
+    public Page<PerfumeSummaryResponse> listPerfumes(Gender gender, UUID brandId, String search, Pageable pageable) {
+        return perfumeRepository.findAll(PerfumeSpecifications.publicCatalog(gender, brandId, search), pageable)
                 .map(this::toSummaryResponse);
     }
 
     public PerfumeResponse getPerfumeById(UUID id) {
         Perfume perfume = perfumeRepository.findById(id)
+                .filter(p -> p.getHiddenAt() == null)
                 .orElseThrow(() -> new PerfumeNotFoundException(id));
         return toFullResponse(perfume);
     }

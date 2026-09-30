@@ -41,6 +41,7 @@ public class CatalogFixtures {
         private String brandCountry = "Testland";
         private Gender gender = Gender.UNISEX;
         private Integer year;
+        private boolean hidden;
         private final Map<String, NoteType> notes = new LinkedHashMap<>();
         private final Map<String, Integer> accords = new LinkedHashMap<>();
 
@@ -61,6 +62,12 @@ public class CatalogFixtures {
 
         public PerfumeBuilder year(Integer year) {
             this.year = year;
+            return this;
+        }
+
+        /** Persists the perfume hidden ({@code hidden_at} set). */
+        public PerfumeBuilder hidden() {
+            this.hidden = true;
             return this;
         }
 
@@ -100,6 +107,7 @@ public class CatalogFixtures {
                 perfume.setBrand(findOrCreateBrand());
                 perfume.setGender(gender);
                 perfume.setYear(year);
+                if (hidden) perfume.setHiddenAt(java.time.Instant.now());
                 em.persist(perfume);
 
                 List<PerfumeNote> perfumeNotes = new ArrayList<>();

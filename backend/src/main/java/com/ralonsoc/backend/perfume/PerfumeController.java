@@ -22,11 +22,7 @@ public class PerfumeController {
             @RequestParam(required = false) UUID brandId,
             @RequestParam(required = false) String search,
             Pageable pageable) {
-
-        if (search != null && !search.isBlank()) {
-            return perfumeService.searchPerfumes(search, pageable);
-        }
-        return perfumeService.listPerfumes(gender, brandId, pageable);
+        return perfumeService.listPerfumes(gender, brandId, search, pageable);
     }
 
     @GetMapping("/{id}")
