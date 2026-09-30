@@ -387,3 +387,5 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/java,intellij,dotenv,macos,linux,windows,node,nextjs
 CLAUDE.md
+docs/*
+specs/*
