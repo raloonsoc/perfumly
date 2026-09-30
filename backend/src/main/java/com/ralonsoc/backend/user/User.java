@@ -54,6 +54,9 @@ public class User implements UserDetails {
     // before this timestamp are rejected by JwtAuthenticationFilter.
     private Instant passwordChangedAt;
 
+    // Null = active account; set = blocked (read by isAccountNonLocked).
+    private Instant blockedAt;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private Instant createdAt;
@@ -78,7 +81,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return blockedAt == null;
     }
 
     @Override

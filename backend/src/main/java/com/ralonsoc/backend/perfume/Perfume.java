@@ -39,6 +39,9 @@ public class Perfume {
 
     private Integer year;
 
+    // Null = visible in the public catalog; set = hidden by an admin.
+    private Instant hiddenAt;
+
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
     private Instant createdAt;
