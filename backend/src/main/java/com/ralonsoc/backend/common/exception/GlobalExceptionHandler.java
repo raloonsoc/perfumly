@@ -1,5 +1,6 @@
 package com.ralonsoc.backend.common.exception;
 
+import com.ralonsoc.backend.auth.AccountBlockedException;
 import com.ralonsoc.backend.auth.EmailAlreadyInUseException;
 import com.ralonsoc.backend.auth.EmailNotVerifiedException;
 import com.ralonsoc.backend.auth.InvalidCredentialsException;
@@ -75,6 +76,13 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(AccountBlockedException.class)
+    public ResponseEntity<ErrorResponse> handleAccountBlocked(AccountBlockedException ex, HttpServletRequest request) {
+        ErrorResponse error = new ErrorResponse(Instant.now(), HttpStatus.FORBIDDEN.value(),
+                "ACCOUNT_BLOCKED", ex.getMessage(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(EmailNotVerifiedException.class)
