@@ -43,6 +43,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/perfumes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 // Spring Security's own default entry point returns 403 for an unauthenticated
